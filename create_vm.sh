@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+set -x
 
 EOF=EOF
 DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -6,7 +7,7 @@ source $DIR/user-list.cfg
 
 print_usage() {
     echo ""
-    echo "Usage: create_vm.sh [user-id] [VM OPTIONS]"
+    echo "Usage: create_vm.sh <user-id> [VM OPTIONS]"
     echo ""
     echo "    VM OPTIONS:"
     echo "       --dev           : Create the Dev VM"
@@ -20,15 +21,6 @@ print_usage() {
     echo "The target VM is created with the second ip in that range."
     echo ""
     echo "Here are assigned ip ranges:"
-    echo "   akshayam:   10.155.75.100 - 10.155.75.109"
-    echo "   atandon:    10.155.75.110 - 10.155.75.119"
-    echo "   josephw:    10.155.75.120 - 10.155.75.129"
-    echo "   rtulsian:   10.155.75.130 - 10.155.75.139"
-    echo "   sahanas:    10.155.75.140 - 10.155.75.149"
-    echo "   svajjhala:  10.155.75.150 - 10.155.75.159"
-    echo "   sjeevaraj:  10.155.75.160 - 10.155.75.169"
-    echo "   supriyas:   10.155.75.170 - 10.155.75.179"
-    echo "   tjiang:     10.155.75.180 - 10.155.75.189"
     echo ""
 
     if [ $# -eq 1 ]; then
@@ -66,7 +58,7 @@ Vagrant.configure("2") do |config|
       ansible.extra_vars = {
           vm_interface: "$interface",
           vm_gateway_ip: "$gateway_ip",
-          vm_ip: "$base_ip.$offset",
+          vm_ip: "$vm_ip",
           vm_netmask: "255.255.224.0",
           vm_dns1: "172.21.200.60",
           vm_dns2: "8.8.8.8",
@@ -147,7 +139,7 @@ create_vm() {
     if [ $destroy -eq 1 ]; then
         vagrant destroy -f
     else
-        echo "Creating ${user}_${name} vm with IP $base_ip.$offset..."
+        echo "Creating ${user}_${name} vm with IP $vm_ip..."
         if [ "$name" == "all" ]; then
             echo "Creating ${user}_ui vm with IP $ui_ip..."
         fi
@@ -195,38 +187,34 @@ interface="eth1"
 host_interface="em1"
 ntp_server="ntp.juniper.net"
 gateway_ip=$(ip route | grep default | grep $host_interface | awk '{print $3}')
-base_ip=$(ip address | grep inet | grep $host_interface | awk '{print $2}' | awk -F '/' '{print $1}' | cut -d"." -f1-3)
-
-user_offset=${!user_id}
-if [ -z "$user_offset" ]; then
-    echo "Error! Unknown user $user_id"
-    print_usage
-fi
+all_id=${user_id}_all
+all_ip=${!all_id}
+ui_id=${user_id}_ui
+ui_ip=${!ui_id}
+dev_id=${user_id}_dev
+dev_ip=${!dev_id}
 
 (vagrant plugin list | grep vbguest >& /dev/null) || vagrant plugin install vagrant-vbguest
 vagrant_dir="$user_id"_vm
 if [ $dev_vm -eq 1 ]; then
-    offset=$(($user_offset * 10 + 90))
+    vm_ip=$dev_ip
     playbook="dev.yml"
     generate_vagrantfile $user_id dev 32000 7
     create_vm $user_id dev
 fi
 if [ $dev_lite_vm -eq 1 ]; then
-    offset=$(($user_offset * 10 + 90))
+    vm_ip=$dev_ip
     playbook="dev-lite.yml"
     generate_vagrantfile $user_id dev-lite 32000 7
     create_vm $user_id dev-lite
 fi
 if [ $all_vm -eq 1 ]; then
+    vm_ip=$all_ip
     count=$(vboxmanage list runningvms | grep all | wc -l)
     if [ $count -gt 5 -a $destroy -ne 1 ]; then
         echo "Cannot create more VMs, 3 or more aio+ui VMs are already running."
         exit 1
     fi
-    offset=$(($user_offset * 10 + 91))
-    all_ip="$base_ip.$offset"
-    ui_offset=$(($user_offset * 10 + 95))
-    ui_ip="$base_ip.$ui_offset"
     playbook="all.yml"
     generate_vagrantfile $user_id all 48000 8
     create_vm $user_id all
