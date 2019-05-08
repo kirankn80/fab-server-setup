@@ -23,18 +23,12 @@ command_servers:
         contrail_config:
             # Database configuration. MySQL/PostgreSQL supported
             database:
-                # MySQL example
-                type: mysql
-                dialect: mysql
+                type: postgres
+                dialect: postgres
                 host: localhost
                 user: root
                 password: contrail123
                 name: contrail_test
-                # Postgres example
-                #connection: "user=root dbname=contrail_test sslmode=disable"
-                #type: postgres
-                #dialect: postgres
-
                 # Max Open Connections for DB Server
                 max_open_conn: 100
                 connection_retries: 10
