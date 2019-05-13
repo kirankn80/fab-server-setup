@@ -41,7 +41,7 @@ generate_vagrantfile() {
 vagrant_root = File.dirname(__FILE__)
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "qarham/CentOS7.5-350GB"
+  config.vm.box = "kirankn/centOS-7.5"
   config.vbguest.auto_update = false
 
   config.vm.define "$user_id-$name" do |m|
@@ -184,7 +184,7 @@ fi
 
 set -e
 interface="eth1"
-host_interface="em1"
+host_interface="eno1"
 ntp_server="ntp.juniper.net"
 gateway_ip=$(ip route | grep default | grep $host_interface | awk '{print $3}')
 all_id=${user_id}_all
